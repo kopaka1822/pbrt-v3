@@ -97,6 +97,7 @@
 #include "shapes/nurbs.h"
 #include "shapes/paraboloid.h"
 #include "shapes/sphere.h"
+#include "shapes/spherical_billboard.h"
 #include "shapes/triangle.h"
 #include "shapes/plymesh.h"
 #include "textures/bilerp.h"
@@ -433,7 +434,9 @@ std::vector<std::shared_ptr<Shape>> MakeShapes(const std::string &name,
     if (name == "sphere")
         s = CreateSphereShape(object2world, world2object, reverseOrientation,
                               paramSet);
-    // Create remaining single _Shape_ types
+    else if (name == "spherical_billboard")
+        s = CreateSphericalBillboardShape(object2world, world2object,
+                              reverseOrientation, paramSet);
     else if (name == "cylinder")
         s = CreateCylinderShape(object2world, world2object, reverseOrientation,
                                 paramSet);

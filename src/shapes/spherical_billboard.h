@@ -35,8 +35,8 @@
 #pragma once
 #endif
 
-#ifndef PBRT_SHAPES_SPHERE_H
-#define PBRT_SHAPES_SPHERE_H
+#ifndef PBRT_SHAPES_SPHERICAL_BILLBOARD_H
+#define PBRT_SHAPES_SPHERICAL_BILLBOARD_H
 
 // shapes/sphere.h*
 #include "shape.h"
