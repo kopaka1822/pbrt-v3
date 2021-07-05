@@ -42,8 +42,8 @@ namespace pbrt {
 
 // Sphere Method Definitions
 Bounds3f SphericalBillboard::ObjectBound() const {
-    return Bounds3f(Point3f(-radius, -radius, zMin),
-                    Point3f(radius, radius, zMax));
+    return Bounds3f(Point3f(-radius, -radius, -radius),
+                    Point3f(radius, radius, radius));
 }
 
 bool SphericalBillboard::Intersect(const Ray &r, Float *tHit,
@@ -86,27 +86,10 @@ bool SphericalBillboard::Intersect(const Ray &r, Float *tHit,
     phi = std::atan2(pHit.y, pHit.x);
     if (phi < 0) phi += 2 * Pi;
 
-    // Test sphere intersection against clipping parameters
-    if ((zMin > -radius && pHit.z < zMin) || (zMax < radius && pHit.z > zMax) ||
-        phi > phiMax) {
-        if (tShapeHit == t1) return false;
-        if (t1.UpperBound() > ray.tMax) return false;
-        tShapeHit = t1;
-        // Compute sphere hit position and $\phi$
-        pHit = ray((Float)tShapeHit);
-
-        // Refine sphere intersection point
-        pHit *= radius / Distance(pHit, Point3f(0, 0, 0));
-        if (pHit.x == 0 && pHit.y == 0) pHit.x = 1e-5f * radius;
-        phi = std::atan2(pHit.y, pHit.x);
-        if (phi < 0) phi += 2 * Pi;
-        if ((zMin > -radius && pHit.z < zMin) ||
-            (zMax < radius && pHit.z > zMax) || phi > phiMax)
-            return false;
-    }
-
     // Find parametric representation of sphere hit
-    Float u = phi / phiMax;
+    Float thetaMin = Pi;
+    Float thetaMax = 0.0f;
+    Float u = phi / (2.0f * Pi);
     Float theta = std::acos(Clamp(pHit.z / radius, -1, 1));
     Float v = (theta - thetaMin) / (thetaMax - thetaMin);
 
@@ -115,15 +98,15 @@ bool SphericalBillboard::Intersect(const Ray &r, Float *tHit,
     Float invZRadius = 1 / zRadius;
     Float cosPhi = pHit.x * invZRadius;
     Float sinPhi = pHit.y * invZRadius;
-    Vector3f dpdu(-phiMax * pHit.y, phiMax * pHit.x, 0);
+    Vector3f dpdu(-(2.0f * Pi) * pHit.y, (2.0f * Pi) * pHit.x, 0);
     Vector3f dpdv =
         (thetaMax - thetaMin) *
         Vector3f(pHit.z * cosPhi, pHit.z * sinPhi, -radius * std::sin(theta));
 
     // Compute sphere $\dndu$ and $\dndv$
-    Vector3f d2Pduu = -phiMax * phiMax * Vector3f(pHit.x, pHit.y, 0);
+    Vector3f d2Pduu = -(2.0f * Pi) * (2.0f * Pi) * Vector3f(pHit.x, pHit.y, 0);
     Vector3f d2Pduv =
-        (thetaMax - thetaMin) * pHit.z * phiMax * Vector3f(-sinPhi, cosPhi, 0.);
+        (thetaMax - thetaMin) * pHit.z * (2.0f * Pi) * Vector3f(-sinPhi, cosPhi, 0.);
     Vector3f d2Pdvv = -(thetaMax - thetaMin) * (thetaMax - thetaMin) *
                       Vector3f(pHit.x, pHit.y, pHit.z);
 
@@ -194,29 +177,11 @@ bool SphericalBillboard::IntersectP(const Ray &r, bool testAlphaTexture) const {
     phi = std::atan2(pHit.y, pHit.x);
     if (phi < 0) phi += 2 * Pi;
 
-    // Test sphere intersection against clipping parameters
-    if ((zMin > -radius && pHit.z < zMin) || (zMax < radius && pHit.z > zMax) ||
-        phi > phiMax) {
-        if (tShapeHit == t1) return false;
-        if (t1.UpperBound() > ray.tMax) return false;
-        tShapeHit = t1;
-        // Compute sphere hit position and $\phi$
-        pHit = ray((Float)tShapeHit);
-
-        // Refine sphere intersection point
-        pHit *= radius / Distance(pHit, Point3f(0, 0, 0));
-        if (pHit.x == 0 && pHit.y == 0) pHit.x = 1e-5f * radius;
-        phi = std::atan2(pHit.y, pHit.x);
-        if (phi < 0) phi += 2 * Pi;
-        if ((zMin > -radius && pHit.z < zMin) ||
-            (zMax < radius && pHit.z > zMax) || phi > phiMax)
-            return false;
-    }
     return true;
 }
 
 Float SphericalBillboard::Area() const {
-    return phiMax * radius * (zMax - zMin);
+    return 4.0f * Pi * radius * radius;
 }
 
 Interaction SphericalBillboard::Sample(const Point2f &u, Float *pdf) const {
@@ -332,12 +297,8 @@ std::shared_ptr<Shape> CreateSphericalBillboardShape(const Transform *o2w,
                                          bool reverseOrientation,
                                          const ParamSet &params) {
     Float radius = params.FindOneFloat("radius", 1.f);
-    Float zmin = params.FindOneFloat("zmin", -radius);
-    Float zmax = params.FindOneFloat("zmax", radius);
-    Float phimax = params.FindOneFloat("phimax", 360.f);
     return std::make_shared<SphericalBillboard>(o2w, w2o, reverseOrientation,
-                                                radius, zmin,
-                                    zmax, phimax);
+                                                radius);
 }
 
 }  // namespace pbrt
