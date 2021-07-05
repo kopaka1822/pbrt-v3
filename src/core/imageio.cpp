@@ -119,6 +119,8 @@ void WriteImage(const std::string &name, const Float *rgb,
         Error("Can't determine image file type from suffix of filename \"%s\"",
               name.c_str());
     }
+    // open image in default image viewer
+    system(name.c_str());
 }
 
 RGBSpectrum *ReadImageEXR(const std::string &name, int *width, int *height,
